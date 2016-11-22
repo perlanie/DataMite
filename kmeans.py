@@ -2,7 +2,7 @@ import math
 import random
 import sys
 import numpy as np
-
+#I have not tested the results to see if they make sense, but it does run and terminate so thats always good.
 def centroids(points, closest, k):
     clusters = []
     for i in range(k):
