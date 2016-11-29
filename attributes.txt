@@ -1,0 +1,9 @@
+workclass:categorical
+education:categorical
+marital-status:categorical
+occupation:categorical
+relationship:categorical
+race:categorical
+sex:categorical
+native-country:categorical
+class:class
