@@ -247,18 +247,16 @@ def createDecsionTree(data_dict,attr_types, parent_name, branch_name):
 		if(attr_class[1]=="class"):
 			classification=attr_class[0]
 
+	print("remaining data", data_dict[0][classification])
 	if(len(attr_types)>1):
 		splitAttr=getSplittingAttribute(data_dict,attr_types)
 
 		node_name = splitAttr+'_'+str(node_count)
 		if parent_name is not None:
 			print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name,branch_name), file=sys.stderr)
-		sorted_dict=sorted(data_dict, key=lambda a: (a[splitAttr],a[classification]))
-		#print(sorted_dict)
-		split_attr_nodes=list(Counter(data[splitAttr] for data in data_dict).keys())
-		#print(split_attr_nodes)
 		
-		#new_dict=[item for item in sorted_dict if item[splitAttr]==node]
+		sorted_dict=sorted(data_dict, key=lambda a: (a[splitAttr],a[classification]))
+		split_attr_nodes=list(Counter(data[splitAttr] for data in data_dict).keys())
 		new_dicts={node: [item for item in sorted_dict if item[splitAttr]==node] 
 						for node in split_attr_nodes }
 		print(new_dicts)
@@ -278,6 +276,8 @@ def createDecsionTree(data_dict,attr_types, parent_name, branch_name):
 			createDecsionTree(attr_dict,attr_types, node_name,node)
 
 	else:
+		node_name = data_dict[0][classification]+'_'+str(node_count)
+		print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name,branch_name), file=sys.stderr)
 		return
 
 """
