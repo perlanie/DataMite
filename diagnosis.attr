@@ -1,0 +1,8 @@
+temperature:numerical
+nausea:categorical
+lumbar:categorical
+urine:categorical
+micturition:categorical
+urethra:categorical
+inflammation:class
+nephritis:class
