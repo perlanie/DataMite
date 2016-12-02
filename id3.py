@@ -236,6 +236,8 @@ def getDataDict(attr_types,filePath):
 		line=fileHandler.readline().strip()
 
 	return data_dict
+
+	
 node_count = 0
 def createDecsionTree(data_dict,attr_types, parent_name, branch_name):
 	global node_count
