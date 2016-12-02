@@ -3,23 +3,24 @@ import sys
 from fractions import Fraction
 import numpy as np
 import collections
-from collections import Counter
+from collections import Counter, defaultdict
+
 
 data_dict=[
-	{'A1':'A','A2':70,'A3':True, 'Class':'Class1'},
-    {'A1':'A','A2':90,'A3':True, 'Class':'Class2'},
-   	{'A1':'A','A2':85,'A3':False, 'Class':'Class2'},
-   	{'A1':'A','A2':95,'A3':False, 'Class':'Class2'},
-    {'A1':'A','A2':70,'A3':False, 'Class':'Class1'},
-    {'A1':'B','A2':90,'A3':True, 'Class':'Class1'},
-    {'A1':'B','A2':78,'A3':False, 'Class':'Class1'},
-    {'A1':'B','A2':65,'A3':True, 'Class':'Class1'},
-    {'A1':'B','A2':75,'A3':False, 'Class':'Class1'},
-    {'A1':'C','A2':80,'A3':True, 'Class':'Class2'},
-    {'A1':'C','A2':70,'A3':True, 'Class':'Class2'},
-    {'A1':'C','A2':80,'A3':False, 'Class':'Class1'},
-    {'A1':'C','A2':80,'A3':False, 'Class':'Class1'},
-    {'A1':'C','A2':96,'A3':False, 'Class':'Class1'}   
+	{'A1':'A', 'A2':70, 'A3':True, 'Class':'Class1'},
+	{'A1':'A', 'A2':90, 'A3':True, 'Class':'Class2'},
+	{'A1':'A', 'A2':85, 'A3':False, 'Class':'Class2'},
+	{'A1':'A', 'A2':95, 'A3':False, 'Class':'Class2'},
+	{'A1':'A', 'A2':70, 'A3':False, 'Class':'Class1'},
+	{'A1':'B', 'A2':90, 'A3':True, 'Class':'Class1'},
+	{'A1':'B', 'A2':78, 'A3':False, 'Class':'Class1'},
+	{'A1':'B', 'A2':65, 'A3':True, 'Class':'Class1'},
+	{'A1':'B', 'A2':75, 'A3':False, 'Class':'Class1'},
+	{'A1':'C', 'A2':80, 'A3':True, 'Class':'Class2'},
+	{'A1':'C', 'A2':70, 'A3':True, 'Class':'Class2'},
+	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
+	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
+	{'A1':'C', 'A2':96, 'A3':False, 'Class':'Class1'}
 ]
 
 
@@ -27,19 +28,12 @@ data_dict=[
 ========================================
 calcH: calculates the H for the Entropy
 ----------------------------------------
--probabilities: an array of the 
+-probabilities: an array of the
 probabilities of the classifications
 ========================================
 """
 def calcH(probabilities):
-	H = 0.0
-
-	for p in probabilities:
-		H=H-p*math.log(p,2)
-		#print("H=H-{0}".format(p*math.log(p,2)))
-
-	print("Entropy: {0}".format(H))
-	return H
+	return sum(-p*math.log(p,2) for p in probabilities)
 
 
 """
@@ -56,17 +50,13 @@ given attribute
 def calcGain(data_dict,attribute, attr_probabilities,probabilities):
 	H=calcH(probabilities)
 	HAttribute=0.0
-	prob_index=0
 	denominator=len(data_dict)
 	numerators=Counter(data[attribute] for data in data_dict)
-	for attr in attr_probabilities:
-		HT=0.0
-		for ap in attr_probabilities[attr]:
-			HT=HT-ap*math.log(ap,2)
-		HAttribute=HAttribute + (Fraction(numerators[attr],denominator)*HT)
-		prob_index+=1
-			
-	print("HAttribute: {0}".format(HAttribute))	
+	for attr, attr_ps in attr_probabilities.items():
+		HT=calcH(attr_ps)
+		HAttribute=HAttribute + Fraction(numerators[attr],denominator)*HT
+
+	print("HAttribute: {0}".format(HAttribute))
 
 	gain=H-HAttribute
 	print("gain: {0}".format(gain))
@@ -81,38 +71,14 @@ getAttrProbabilities: gets the probabilities for a given attribute
 -classification: the class that you are using to get resulting tree
 ===================================================================
 """
-def getAttrProbabilities(data_dict,attribute, classification):
-	sorted_dict=sorted(data_dict, key=lambda a: (a[attribute],a[classification]))
-	probabilities={}
+def getAttrProbabilities(data_dict, attribute, classification):
+	probabilities = defaultdict(list)
 
-	current_class=sorted_dict[0][classification]
-	current_attr=sorted_dict[0][attribute]
-	class_count=0
-	attr_probabilities=[]
 	attr_denominators=Counter(data[attribute] for data in data_dict)
-	
-
-	for a in sorted_dict:
-		if(a[attribute]==current_attr):
-			if(a[classification]==current_class):
-				class_count+=1
-	
-			else:
-				attr_probabilities.append(Fraction(class_count,attr_denominators[current_attr]))
-				class_count=1
-				current_class=a[classification]
-
-		else:
-			probabilities[current_attr]=attr_probabilities
-			attr_probabilities.append(Fraction(class_count,attr_denominators[current_attr]))
-			current_class=a[classification]
-			current_attr=a[attribute]
-			class_count=1
-			attr_probabilities=[]
-
-	attr_probabilities.append(Fraction(class_count,attr_denominators[current_attr]))
-	probabilities[current_attr]=attr_probabilities
-	print(probabilities)
+	class_counts = Counter((data[attribute], data[classification]) for data in data_dict)
+	for data_pair, class_count in class_counts.items():
+		attr, classification = data_pair
+		probabilities[attr].append(Fraction(class_count, attr_denominators[attr]))
 	return probabilities
 
 
@@ -120,7 +86,7 @@ def getAttrProbabilities(data_dict,attribute, classification):
 ==============================================================
 getClassProbabilities: calculates probabilities for H
 --------------------------------------------------------------
--data_dict: data dictionary to look at 
+-data_dict: data dictionary to look at
 -classification: attribute that is used for the classification
 ===============================================================
 """
@@ -141,24 +107,30 @@ def getClassProbabilities(data_dict,classification):
 
 	classifications.append(class_count)
 
-	probabilities=[]
-
-	for j in classifications:
-		probabilities.append(Fraction(j,denominator))
-
+	probabilities = [ Fraction(j,denominator) for j in classifications ]
 	return probabilities
+
+def partitionNumericalData(data_dict, attr, classification):
+	median = sorted(data_dict, key=lambda d: -d[attr])[len(data_dict) // 2][attr]
+	smaller = [d for d in data_dict if d[attr] <= median]
+	bigger = [d for d in data_dict if d[attr] > median]
+	print(median)
+	print(smaller)
+	print(bigger)
+	return smaller, bigger, median
 
 """
 ==============================================================
-getSplittingAttribute: gets the splitting attribute of the 
+getSplittingAttribute: gets the splitting attribute of the
 given data set
 --------------------------------------------------------------
--data_dict: data dictionary to look at 
+-data_dict: data dictionary to look at
 -attr_types: data dictionary that has the type of each attribute
 in the given data set
 ===============================================================
 """
 def getSplittingAttribute(data_dict,attr_types):
+	print(attr_types)
 	attr_gains={}
 	classification=None
 
@@ -166,51 +138,58 @@ def getSplittingAttribute(data_dict,attr_types):
 		if(attr_class[1]=="class"):
 			classification=attr_class[0]
 
-		
-	for a_name in attr_types:
-		if(a_name[1]=="categorical"):
-			print("ATTRIBUTE: {0}".format(a_name[0]))
-			print("===========================")
-			probabilities=getClassProbabilities(data_dict,classification)
-			#print(probabilities)
-			attr_probabilities=getAttrProbabilities(data_dict,a_name[0],classification)
-			attr_gains[a_name[0]]=calcGain(data_dict,a_name[0],attr_probabilities,probabilities)
-			print("\n")
-		#elif(attr_types[a_name]=="continuous")
-	spiltAttr=list(attr_gains.keys())[0]
-	for attr in attr_gains:
-		if(attr_gains[attr]>attr_gains[spiltAttr]):
-			spiltAttr=attr
 
-	print("Splitting Attribute = {0}".format(spiltAttr))
-	return spiltAttr
+	probabilities=getClassProbabilities(data_dict, classification)
+	for attr, attr_type in attr_types:
+		if attr_type == "categorical":
+			print("ATTRIBUTE: {0}".format(attr))
+			print("===========================")
+			attr_probabilities=getAttrProbabilities(data_dict, attr, classification)
+			attr_gains[attr]=calcGain(data_dict, attr, attr_probabilities, probabilities)
+			print("\n")
+		elif attr_type == "numerical":
+			print("ATTRIBUTE: {0}".format(attr))
+			print ("===========================")
+			smaller, bigger, median = partitionNumericalData(data_dict, attr, classification)
+
+			H_smaller = calcH(getClassProbabilities(smaller, classification))
+			H_bigger = calcH(getClassProbabilities(bigger, classification))
+			HTAttribute = Fraction(len(smaller),len(data_dict))*H_smaller + Fraction(len(bigger),len(data_dict))*H_bigger
+			H = calcH(probabilities)
+			attr_gains[attr] = H - HTAttribute
+			print ("\n")
+		else:
+			print("{} ATTRIBUTE: {}".format(attr_type, attr))
+
+	non_class_attr_types = [(a, a_type) for a, a_type in attr_types if a_type != 'class']
+	split_attr, split_attr_type = non_class_attr_types[0]
+	for attr, attr_type in non_class_attr_types:
+		if(attr_gains[attr]>attr_gains[split_attr]):
+			split_attr, split_attr_type = attr, attr_type
+
+	print("Splitting Attribute = {0}".format(split_attr))
+	return split_attr, split_attr_type
 
 """
 ==============================================================
-getAttrTypes: gets the attrutes and their types 
+getAttrTypes: gets the attrutes and their types
 --------------------------------------------------------------
--filePath: the path of the file with the attributes and their 
+-filePath: the path of the file with the attributes and their
 types
 ==============================================================
 """
 def getAttrTypes(filePath):
 	attr_types=[]
-	fileHandler=open(filePath,"r")
-	line=fileHandler.readline().strip()
-
-	while(line!=""):
-		attr=line.split(":")
-		#print(attr)
-		#attr_types[attr[0]]=attr[1]
-		attr_types.append(attr)
-		line=fileHandler.readline().strip()
-
-	#print(attr_types)
+	with open(filePath, 'r') as fileHandler:
+		for line in fileHandler:
+			line = line.strip()
+			attr=line.split(":")
+			attr_types.append(attr)
 	return attr_types
 
 """
 ==============================================================
-getDataDict: reads in a data set and turns it into a data 
+getDataDict: reads in a data set and turns it into a data
 dictionary
 --------------------------------------------------------------
 -attr_types: the attributes along with what types they are
@@ -230,65 +209,75 @@ def getDataDict(attr_types,filePath):
 			for a_name in attr_types:
 				data_dict_row[a_name[0]]=data_set_row[index]
 				index+=1
-			
+
 			index=0
 			data_dict.append(data_dict_row)
 		line=fileHandler.readline().strip()
 
 	return data_dict
+
 node_count = 0
-def createDecsionTree(data_dict,attr_types, parent_name, branch_name):
+def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 	global node_count
 	node_count+=1
 	classification=None
 	new_dicts={}
 
 	for attr_class in attr_types:
-		if(attr_class[1]=="class"):
+		if attr_class[1] == "class":
 			classification=attr_class[0]
 
 	print("remaining data", data_dict[0][classification])
-	if(len(attr_types)>1):
-		splitAttr=getSplittingAttribute(data_dict,attr_types)
+	active_classes = { datum[classification] for datum in data_dict }
+	print("active classes", active_classes)
+	if len(active_classes) > 1:
+		split_attr, split_attr_type = getSplittingAttribute(data_dict, attr_types)
 
-		node_name = splitAttr+'_'+str(node_count)
+		node_name = split_attr + '_' + str(node_count)
+		print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
+
 		if parent_name is not None:
-			print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name,branch_name), file=sys.stderr)
-		
-		sorted_dict=sorted(data_dict, key=lambda a: (a[splitAttr],a[classification]))
-		split_attr_nodes=list(Counter(data[splitAttr] for data in data_dict).keys())
-		new_dicts={node: [item for item in sorted_dict if item[splitAttr]==node] 
+			print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name, branch_name), file=sys.stderr)
+
+		if split_attr_type == 'categorical':
+			sorted_dict=sorted(data_dict, key=lambda a: (a[split_attr], a[classification]))
+			split_attr_nodes=list(Counter(data[split_attr] for data in data_dict).keys())
+			new_dicts={ node: [a for a in sorted_dict if a[split_attr] == node]
 						for node in split_attr_nodes }
-		print(new_dicts)
+			print(new_dicts)
 
-		for node in new_dicts:
-			attr_dict=new_dicts[node]
-			for d in attr_dict: 
-				d.pop(splitAttr, None)
+			for node in new_dicts:
+				attr_dict=new_dicts[node]
+				for d in attr_dict:
+					d.pop(split_attr, None)
 
-		
-		attr_types=[item for item in attr_types if(item[0]!=splitAttr)]	
-		print("\n=================================================================================")
+			attr_types = [a for a in attr_types if a[0] != split_attr]
 
-
-		for node in new_dicts:
-			attr_dict=new_dicts[node]
-			createDecsionTree(attr_dict,attr_types, node_name,node)
+			for node in new_dicts:
+				attr_dict=new_dicts[node]
+				createDecsionTree(attr_dict,attr_types, node_name,node)
+		else:
+			assert split_attr_type == 'numerical', split_attr_type
+			smaller, bigger, median = partitionNumericalData(data_dict, split_attr, classification)
+			createDecsionTree(smaller, attr_types, node_name, "<= " + str(median))
+			createDecsionTree(bigger, attr_types, node_name, "> " + str(median))
 
 	else:
-		node_name = data_dict[0][classification]+'_'+str(node_count)
+		class_name = data_dict[0][classification]
+		node_name = class_name+'_'+str(node_count)
+		print('"{}" [label="{}"];'.format(node_name, class_name), file=sys.stderr)
 		print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name,branch_name), file=sys.stderr)
 		return
 
 """
 ==============================
-			MAIN 
+			MAIN
 ==============================
 """
 def main():
 	#attr_types=getAttrTypes("./attributes.txt")
 	#data_dict=getDataDict(attr_types,"./dataset.txt")
-	attr_types=[["A1","categorical"],["A2","continuous"],["A3","categorical"],["Class","class"]]
+	attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	#getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
@@ -298,4 +287,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+	main()
