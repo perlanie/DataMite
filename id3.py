@@ -111,9 +111,11 @@ def getClassProbabilities(data_dict,classification):
 	return probabilities
 
 def partitionNumericalData(data_dict, attr, classification):
-	median = sorted(data_dict, key=lambda d: -d[attr])[len(data_dict) // 2][attr]
-	smaller = [d for d in data_dict if d[attr] <= median]
-	bigger = [d for d in data_dict if d[attr] > median]
+	print("ATTR: ",attr)
+	median = sorted(data_dict, key=lambda d: -int(d[attr]))[len(data_dict) // 2][attr]
+	#print(median)
+	smaller = [d for d in data_dict if int(d[attr]) <= int(median)]
+	bigger = [d for d in data_dict if int(d[attr]) > int(median)]
 	print(median)
 	print(smaller)
 	print(bigger)
@@ -227,7 +229,7 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 		if attr_class[1] == "class":
 			classification=attr_class[0]
 
-	print("remaining data", data_dict[0][classification])
+	#print("remaining data", data_dict[0][classification])
 	active_classes = { datum[classification] for datum in data_dict }
 	print("active classes", active_classes)
 	if len(active_classes) > 1:
@@ -275,9 +277,9 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 ==============================
 """
 def main():
-	#attr_types=getAttrTypes("./attributes.txt")
-	#data_dict=getDataDict(attr_types,"./dataset.txt")
-	attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
+	attr_types=getAttrTypes("./attributes.txt")
+	data_dict=getDataDict(attr_types,"./dataset.txt")
+	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	#getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
