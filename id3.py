@@ -111,14 +111,19 @@ def getClassProbabilities(data_dict,classification):
 	return probabilities
 
 def partitionNumericalData(data_dict, attr, classification):
-	print("ATTR: ",attr)
-	median = sorted(data_dict, key=lambda d: -int(d[attr]))[len(data_dict) // 2][attr]
+	# print("ATTR: ",attr)
+	# median = sorted(data_dict, key=lambda d: -int(d[attr]))[len(data_dict) // 2][attr]
 	#print(median)
-	smaller = [d for d in data_dict if int(d[attr]) <= int(median)]
-	bigger = [d for d in data_dict if int(d[attr]) > int(median)]
-	print(median)
-	print(smaller)
-	print(bigger)
+	# smaller = [d for d in data_dict if int(d[attr]) <= int(median)]
+	# bigger = [d for d in data_dict if int(d[attr]) > int(median)]
+	# print(median)
+	# print(smaller)
+	# print(bigger)
+
+	sort = sorted(data_dict, key=lambda d: -d[attr])
+	median = sort[len(data_dict) // 2][attr]
+	smaller = sort[len(data_dict) // 2:] # [d for d in data_dict if d[attr] <= median]
+	bigger = sort[:len(data_dict) // 2] # [d for d in data_dict if d[attr] > median]
 	return smaller, bigger, median
 
 """
@@ -132,7 +137,6 @@ in the given data set
 ===============================================================
 """
 def getSplittingAttribute(data_dict,attr_types):
-	print(attr_types)
 	attr_gains={}
 	classification=None
 
@@ -186,7 +190,7 @@ def getAttrTypes(filePath):
 		for line in fileHandler:
 			line = line.strip()
 			attr=line.split(":")
-			attr_types.append(attr)
+			attr_types.append([a.strip() for a in attr])
 	return attr_types
 
 """
@@ -200,22 +204,22 @@ dictionary
 """
 def getDataDict(attr_types,filePath):
 	data_dict=[]
-	fileHandler=open(filePath,"r")
-	line=fileHandler.readline().strip()
+	with open(filePath, 'r') as f:
+		for line in f:
+			line = line.strip()
+			if '?' in line:
+				continue
 
-	while(line!=""):
-		if("?" not in line):
 			data_set_row=line.split(",")
 			data_dict_row={}
 			index=0
-			for a_name in attr_types:
-				data_dict_row[a_name[0]]=data_set_row[index]
+			for attr, attr_type in attr_types:
+				if attr_type == 'numerical':
+					data_dict_row[attr] = float(data_set_row[index].strip())
+				else:
+					data_dict_row[attr] = data_set_row[index].strip()
 				index+=1
-
-			index=0
 			data_dict.append(data_dict_row)
-		line=fileHandler.readline().strip()
-
 	return data_dict
 
 node_count = 0
@@ -246,7 +250,6 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 			split_attr_nodes=list(Counter(data[split_attr] for data in data_dict).keys())
 			new_dicts={ node: [a for a in sorted_dict if a[split_attr] == node]
 						for node in split_attr_nodes }
-			print(new_dicts)
 
 			for node in new_dicts:
 				attr_dict=new_dicts[node]
@@ -277,8 +280,11 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 ==============================
 """
 def main():
-	attr_types=getAttrTypes("./attributes.txt")
-	data_dict=getDataDict(attr_types,"./dataset.txt")
+
+	# attr_types=getAttrTypes("./mnist.attr")
+	# data_dict=getDataDict(attr_types,"./mnist.data")
+	attr_types=getAttrTypes("./attributes_1.txt")
+	data_dict=getDataDict(attr_types,"./dataset_1.txt")
 	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	#getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
