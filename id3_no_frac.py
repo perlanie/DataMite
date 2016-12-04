@@ -5,23 +5,23 @@ import collections
 from collections import Counter, defaultdict
 import time
 import cProfile
-
-data_dict=[
-	{'A1':'A', 'A2':70, 'A3':True, 'Class':'Class1'},
-	{'A1':'A', 'A2':90, 'A3':True, 'Class':'Class2'},
-	{'A1':'A', 'A2':85, 'A3':False, 'Class':'Class2'},
-	{'A1':'A', 'A2':95, 'A3':False, 'Class':'Class2'},
-	{'A1':'A', 'A2':70, 'A3':False, 'Class':'Class1'},
-	{'A1':'B', 'A2':90, 'A3':True, 'Class':'Class1'},
-	{'A1':'B', 'A2':78, 'A3':False, 'Class':'Class1'},
-	{'A1':'B', 'A2':65, 'A3':True, 'Class':'Class1'},
-	{'A1':'B', 'A2':75, 'A3':False, 'Class':'Class1'},
-	{'A1':'C', 'A2':80, 'A3':True, 'Class':'Class2'},
-	{'A1':'C', 'A2':70, 'A3':True, 'Class':'Class2'},
-	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
-	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
-	{'A1':'C', 'A2':96, 'A3':False, 'Class':'Class1'}
-]
+import statistics
+# data_dict=[
+# 	{'A1':'A', 'A2':70, 'A3':True, 'Class':'Class1'},
+# 	{'A1':'A', 'A2':90, 'A3':True, 'Class':'Class2'},
+# 	{'A1':'A', 'A2':85, 'A3':False, 'Class':'Class2'},
+# 	{'A1':'A', 'A2':95, 'A3':False, 'Class':'Class2'},
+# 	{'A1':'A', 'A2':70, 'A3':False, 'Class':'Class1'},
+# 	{'A1':'B', 'A2':90, 'A3':True, 'Class':'Class1'},
+# 	{'A1':'B', 'A2':78, 'A3':False, 'Class':'Class1'},
+# 	{'A1':'B', 'A2':65, 'A3':True, 'Class':'Class1'},
+# 	{'A1':'B', 'A2':75, 'A3':False, 'Class':'Class1'},
+# 	{'A1':'C', 'A2':80, 'A3':True, 'Class':'Class2'},
+# 	{'A1':'C', 'A2':70, 'A3':True, 'Class':'Class2'},
+# 	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
+# 	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
+# 	{'A1':'C', 'A2':96, 'A3':False, 'Class':'Class1'}
+# ]
 
 data_dict = [
 	['A', 70, True, 'Class1'],
@@ -221,7 +221,6 @@ node_count = 0
 def createDecsionTree(data, attr_types, parent_name, branch_name):
 	global node_count
 	node_count+=1
-	new_dicts={}
 
 	class_idx = None
 	for i, attr_info in enumerate(attr_types):
@@ -241,13 +240,24 @@ def createDecsionTree(data, attr_types, parent_name, branch_name):
 				print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
 
 			split_attr_nodes = Counter(d[split_attr_idx] for d in data).keys()
-			new_dicts = { node: [d for d in data if d[split_attr_idx] == node]
-						    for node in split_attr_nodes }
+			print("split_attr_nodes:",split_attr_nodes)
+			# new_dicts = { node: [d for d in data if d[split_attr_idx] == node]
+			# 			    for node in split_attr_nodes }
 
-			for node in new_dicts:
-				attr_data = new_dicts[node]
-				for d in attr_data:
-					del d[split_attr_idx]
+			
+			new_dicts={}
+			for node in split_attr_nodes:
+				new_dicts[node]=[]
+
+			for d in data:
+				attr=d[split_attr_idx]
+				del d[split_attr_idx]
+				new_dicts[attr].append(d)
+
+			# for node in new_dicts:
+			# 	attr_data = new_dicts[node]
+			# 	for d in attr_data:
+			# 		del d[split_attr_idx]
 
 			attr_types = [a for i, a in enumerate(attr_types) if i != split_attr_idx]
 			assert len(data[0]) == len(attr_types)
@@ -282,12 +292,14 @@ def createDecsionTree(data, attr_types, parent_name, branch_name):
 def main():
 	start=time.time()
 	#getClassProbabilities(data_dict,"Class")
-	# attr_types=getAttrTypes("./mnist.attr")
-	# data_dict=getDataDict(attr_types,"./mnist.data")
+	#attr_types=getAttrTypes("./attributes_census.txt")
+	#data_dict=getDataDict(attr_types,"./dataset_census.txt")
+	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	attr_types=getAttrTypes("./large_atters.txt")
+	#print(attr_types)
 	data_dict=getDataDict(attr_types,"./large_dataset.txt")
 	print(data_dict[0], attr_types)
-	# attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
+	
 	# getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
