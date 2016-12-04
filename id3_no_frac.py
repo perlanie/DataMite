@@ -23,6 +23,23 @@ data_dict=[
 	{'A1':'C', 'A2':96, 'A3':False, 'Class':'Class1'}
 ]
 
+data_dict = [
+	['A', 70, True, 'Class1'],
+	['A', 90, True, 'Class2'],
+	['A', 85, False, 'Class2'],
+	['A', 95, False, 'Class2'],
+	['A', 70, False, 'Class1'],
+	['B', 90, True, 'Class1'],
+	['B', 78, False, 'Class1'],
+	['B', 65, True, 'Class1'],
+	['B', 75, False, 'Class1'],
+	['C', 80, True, 'Class2'],
+	['C', 70, True, 'Class2'],
+	['C', 80, False, 'Class1'],
+	['C', 80, False, 'Class1'],
+	['C', 96, False, 'Class1']
+]
+
 H=None
 
 """
@@ -48,20 +65,19 @@ given attribute
 -probabilities:  an array of the probabilities of the classifications
 ======================================================================
 """
-def calcGain(data_dict,attribute, attr_probabilities, probabilities):
+def calcGain(data, attr_idx, attr_probabilities, probabilities):
 	H=calcH(probabilities)
-	print(H)
 	HAttribute=0.0
-	denominator=len(data_dict)
-	numerators=Counter(data[attribute] for data in data_dict)
+	denominator=len(data)
+	numerators=Counter(d[attr_idx] for d in data)
 	for attr, attr_ps in attr_probabilities.items():
 		HT=calcH(attr_ps)
-		HAttribute=HAttribute + (numerators[attr]/denominator)*HT
+		HAttribute=HAttribute + (numerators[attr] / denominator)*HT
 
-	print("HAttribute: {0}".format(HAttribute))
+	# print("HAttribute: {0}".format(HAttribute))
 
 	gain=H-HAttribute
-	print("gain: {0}".format(gain))
+	# print("gain: {0}".format(gain))
 	return gain
 
 """
@@ -73,11 +89,11 @@ getAttrProbabilities: gets the probabilities for a given attribute
 -classification: the class that you are using to get resulting tree
 ===================================================================
 """
-def getAttrProbabilities(data_dict, attribute, classification):
+def getAttrProbabilities(data, attr_idx, class_idx):
 	probabilities = defaultdict(list)
 
-	attr_denominators=Counter(data[attribute] for data in data_dict)
-	class_counts = Counter((data[attribute], data[classification]) for data in data_dict)
+	attr_denominators=Counter(d[attr_idx] for d in data)
+	class_counts = Counter((d[attr_idx], d[class_idx]) for d in data)
 	for data_pair, class_count in class_counts.items():
 		attr, classification = data_pair
 		probabilities[attr].append(class_count / attr_denominators[attr])
@@ -92,19 +108,19 @@ getClassProbabilities: calculates probabilities for H
 -classification: attribute that is used for the classification
 ===============================================================
 """
-def getClassProbabilities(data_dict,classification):
-	denominator=len(data_dict)
-	class_counts= Counter(d[classification] for d in data_dict)
+def getClassProbabilities(data, class_idx):
+	denominator = len(data)
+	class_counts = Counter(d[class_idx] for d in data)
 	probabilities = [ count / denominator for cls, count in class_counts.items() ]
 	return probabilities
 
 
-def partitionNumericalData(data_dict, attr, classification):
-	avg = sum(d[attr] for d in data_dict) / len(data_dict)
+def partitionNumericalData(data, attr_idx, class_idx):
+	avg = sum(d[attr_idx] for d in data) / len(data)
 	smaller = []
 	bigger = []
-	for d in data_dict:
-		if d[attr] <= avg:
+	for d in data:
+		if d[attr_idx] <= avg:
 			smaller.append(d)
 		else:
 			bigger.append(d)
@@ -121,37 +137,39 @@ given data set
 in the given data set
 ===============================================================
 """
-def getSplittingAttribute(data_dict,attr_types):
-	attr_gains={}
-	classification=None
+def getSplittingAttribute(data, attr_types):
+	attr_gains=[None] * len(attr_types)
 
-	for attr_class in attr_types:
-		if(attr_class[1]=="class"):
-			classification=attr_class[0]
+	class_idx = None
+	for i, attr_class in enumerate(attr_types):
+		if attr_class[1] == "class":
+			class_idx = i
 
-	probabilities=getClassProbabilities(data_dict, classification)
-	for attr, attr_type in attr_types:
+	probabilities = getClassProbabilities(data, class_idx)
+	for attr_idx, attr_info in enumerate(attr_types):
+		attr, attr_type = attr_info
 		if attr_type == "categorical":
-			attr_probabilities=getAttrProbabilities(data_dict, attr, classification)
-			attr_gains[attr]=calcGain(data_dict, attr, attr_probabilities, probabilities)
+			attr_probabilities = getAttrProbabilities(data, attr_idx, class_idx)
+			attr_gains[attr_idx] = calcGain(data, attr_idx, attr_probabilities, probabilities)
 		elif attr_type == "numerical":
-			smaller, bigger, median = partitionNumericalData(data_dict, attr, classification)
-			H_smaller = calcH(getClassProbabilities(smaller, classification))
-			H_bigger = calcH(getClassProbabilities(bigger, classification))
-			HTAttribute = (len(smaller) / len(data_dict))*H_smaller + (len(bigger) / len(data_dict))*H_bigger
+			smaller, bigger, median = partitionNumericalData(data, attr_idx, class_idx)
+			H_smaller = calcH(getClassProbabilities(smaller, class_idx))
+			H_bigger = calcH(getClassProbabilities(bigger, class_idx))
+			HTAttribute = (len(smaller) / len(data))*H_smaller + (len(bigger) / len(data))*H_bigger
 			H = calcH(probabilities)
-			attr_gains[attr] = H - HTAttribute
+			attr_gains[attr_idx] = H - HTAttribute
 		else:
-			print("{} ATTRIBUTE: {}".format(attr_type, attr))
+			print("WEIRD: {} ATTRIBUTE: {}".format(attr_type, attr))
 
-	non_class_attr_types = [(a, a_type) for a, a_type in attr_types if a_type != 'class']
-	split_attr, split_attr_type = non_class_attr_types[0]
-	for attr, attr_type in non_class_attr_types:
-		if(attr_gains[attr]>attr_gains[split_attr]):
-			split_attr, split_attr_type = attr, attr_type
+	max_attr_idx = None
+	for i in range(len(attr_gains)):
+		if attr_gains[i] is None:
+			continue
+		if max_attr_idx is None or attr_gains[i] > attr_gains[max_attr_idx]:
+			max_attr_idx = i
 
-	print("Splitting Attribute = {0}".format(split_attr))
-	return split_attr, split_attr_type
+	print("Splitting Attribute = {0}".format(attr_types[max_attr_idx]))
+	return max_attr_idx
 
 
 """
@@ -181,73 +199,68 @@ dictionary
 -filePath: the path of the file with the data set
 ===============================================================
 """
-def getDataDict(attr_types,filePath):
-	data_dict=[]
+def getDataDict(attr_types, filePath):
+	data=[]
 	with open(filePath, 'r') as f:
 		for line in f:
 			line = line.strip()
 			if '?' in line:
 				continue
 
-			data_set_row=line.split(",")
-			data_dict_row={}
-			index=0
-			for attr, attr_type in attr_types:
+			data_row = []
+			for attr_info, elem in zip(attr_types, line.split(",")):
+				attr_type = attr_info[1]
 				if attr_type == 'numerical':
-					data_dict_row[attr] = float(data_set_row[index].strip())
+					data_row.append(float(elem.strip()))
 				else:
-					data_dict_row[attr] = data_set_row[index].strip()
-				index+=1
-			data_dict.append(data_dict_row)
-	return data_dict
+					data_row.append(elem.strip())
+			data.append(data_row)
+	return data
 
 node_count = 0
-def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
+def createDecsionTree(data, attr_types, parent_name, branch_name):
 	global node_count
 	node_count+=1
-	classification=None
 	new_dicts={}
 
-	for attr_class in attr_types:
-		if attr_class[1] == "class":
-			classification=attr_class[0]
+	class_idx = None
+	for i, attr_info in enumerate(attr_types):
+		if attr_info[1] == "class":
+			class_idx = i
 
-	#print("remaining data", data_dict[0][classification])
-
-	active_classes = { datum[classification] for datum in data_dict }
-	#print("active classes", active_classes)
+	active_classes = { datum[class_idx] for datum in data }
 	if len(active_classes) > 1 and len(attr_types) > 1:
-		split_attr, split_attr_type = getSplittingAttribute(data_dict, attr_types)
+		split_attr_idx = getSplittingAttribute(data, attr_types)
+		split_attr, split_attr_type = attr_types[split_attr_idx]
 
 		node_name = split_attr + '_' + str(node_count)
-
 
 		if split_attr_type == 'categorical':
 			if parent_name is not None:
 				print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name, branch_name), file=sys.stderr)
 				print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
-			# sorted_dict=sorted(data_dict, key=lambda a: (a[split_attr], a[classification]))
-			split_attr_nodes=list(Counter(data[split_attr] for data in data_dict).keys())
-			new_dicts={ node: [a for a in data_dict if a[split_attr] == node]
-						for node in split_attr_nodes }
+
+			split_attr_nodes = Counter(d[split_attr_idx] for d in data).keys()
+			new_dicts = { node: [d for d in data if d[split_attr_idx] == node]
+						    for node in split_attr_nodes }
 
 			for node in new_dicts:
-				attr_dict=new_dicts[node]
-				for d in attr_dict:
-					d.pop(split_attr, None)
+				attr_data = new_dicts[node]
+				for d in attr_data:
+					del d[split_attr_idx]
 
-			attr_types = [a for a in attr_types if a[0] != split_attr]
-
+			attr_types = [a for i, a in enumerate(attr_types) if i != split_attr_idx]
+			assert len(data[0]) == len(attr_types)
+			print(data[0])
+			print([t[1] for t in attr_types])
 			for node in new_dicts:
-				attr_dict=new_dicts[node]
-				createDecsionTree(attr_dict,attr_types, node_name,node)
+				attr_data = new_dicts[node]
+				createDecsionTree(attr_data, attr_types, node_name, node)
 		else:
 			assert split_attr_type == 'numerical', split_attr_type
-			smaller, bigger, branching_num = partitionNumericalData(data_dict, split_attr, classification)
+			smaller, bigger, branching_num = partitionNumericalData(data, split_attr_idx, class_idx)
 			if smaller == [] or bigger == []:
 				print('We have competing evidence here')
-				#attr_types = [a for a in attr_types if a[0] != split_attr]
-				#createDecsionTree(data_dict, attr_types, parent_name, branch_name)
 			else:
 				if parent_name is not None:
 					print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name, branch_name), file=sys.stderr)
@@ -256,11 +269,10 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 				createDecsionTree(bigger, attr_types, node_name, "> " + str(branching_num))
 
 	else:
-		class_name = data_dict[0][classification]
-		node_name = class_name+'_'+str(node_count)
+		class_name = data[0][class_idx]
+		node_name = class_name + '_' + str(node_count)
 		print('"{}" [label="{}"];'.format(node_name, class_name), file=sys.stderr)
 		print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name,branch_name), file=sys.stderr)
-		return
 
 """
 ==============================
@@ -274,6 +286,7 @@ def main():
 	# data_dict=getDataDict(attr_types,"./mnist.data")
 	attr_types=getAttrTypes("./large_atters.txt")
 	data_dict=getDataDict(attr_types,"./large_dataset.txt")
+	print(data_dict[0], attr_types)
 	# attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	# getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
@@ -285,4 +298,5 @@ def main():
 
 
 if __name__ == '__main__':
-	cProfile.run('main()')
+	# cProfile.run('main()')
+	main()
