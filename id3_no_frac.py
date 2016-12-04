@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import collections
 from collections import Counter, defaultdict
-
+import time
 
 data_dict=[
 	{'A1':'A', 'A2':70, 'A3':True, 'Class':'Class1'},
@@ -22,6 +22,7 @@ data_dict=[
 	{'A1':'C', 'A2':96, 'A3':False, 'Class':'Class1'}
 ]
 
+H=None
 
 """
 ========================================
@@ -48,6 +49,7 @@ given attribute
 """
 def calcGain(data_dict,attribute, attr_probabilities,probabilities):
 	H=calcH(probabilities)
+	print(H)
 	HAttribute=0.0
 	denominator=len(data_dict)
 	numerators=Counter(data[attribute] for data in data_dict)
@@ -91,22 +93,8 @@ getClassProbabilities: calculates probabilities for H
 """
 def getClassProbabilities(data_dict,classification):
 	denominator=len(data_dict)
-	classifications=[]
-	sorted_dict=sorted(data_dict, key=lambda attribute: attribute[classification])
-	current_class=sorted_dict[0][classification]
-	class_count=0
-
-	for i in sorted_dict:
-		if(i[classification]==current_class):
-			class_count+=1
-		else:
-			classifications.append(class_count)
-			class_count=1
-			current_class=i[classification]
-
-	classifications.append(class_count)
-
-	probabilities = [ j / denominator for j in classifications ]
+	classifications=list(Counter(d[classification] for d in data_dict).items())
+	probabilities = [ j[1] / denominator for j in classifications ]
 	return probabilities
 
 def partitionNumericalData(data_dict, attr, classification):
@@ -152,7 +140,9 @@ def getSplittingAttribute(data_dict,attr_types):
 			H_bigger = calcH(getClassProbabilities(bigger, classification))
 			HTAttribute = (len(smaller) / len(data_dict))*H_smaller + (len(bigger) / len(data_dict))*H_bigger
 			H = calcH(probabilities)
+			print("HAttribute: {0}".format(HTAttribute))
 			attr_gains[attr] = H - HTAttribute
+			print("gain: {0}".format(attr_gains[attr]))
 			print ("\n")
 		else:
 			print("{} ATTRIBUTE: {}".format(attr_type, attr))
@@ -223,9 +213,10 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 		if attr_class[1] == "class":
 			classification=attr_class[0]
 
-	print("remaining data", data_dict[0][classification])
+	#print("remaining data", data_dict[0][classification])
+
 	active_classes = { datum[classification] for datum in data_dict }
-	print("active classes", active_classes)
+	#print("active classes", active_classes)
 	if len(active_classes) > 1:
 		split_attr, split_attr_type = getSplittingAttribute(data_dict, attr_types)
 
@@ -270,15 +261,18 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 ==============================
 """
 def main():
+	start=time.time()
+	#getClassProbabilities(data_dict,"Class")
 	# attr_types=getAttrTypes("./mnist.attr")
 	# data_dict=getDataDict(attr_types,"./mnist.data")
-	attr_types=getAttrTypes("./large_atters.txt")
-	data_dict=getDataDict(attr_types,"./large_dataset.txt")
+	attr_types=getAttrTypes("./attributes.txt")
+	data_dict=getDataDict(attr_types,"./dataset_large.txt")
 	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
-	#getSplittingAttribute(data_dict,attr_types)
+	# getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
 	print("}", file=sys.stderr)
+	print(time.time()-start)
 
 
 

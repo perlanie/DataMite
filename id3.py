@@ -4,6 +4,7 @@ from fractions import Fraction
 import numpy as np
 import collections
 from collections import Counter, defaultdict
+import time
 
 
 data_dict=[
@@ -280,16 +281,18 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 ==============================
 """
 def main():
-
+	start=time.time()
 	# attr_types=getAttrTypes("./mnist.attr")
 	# data_dict=getDataDict(attr_types,"./mnist.data")
-	attr_types=getAttrTypes("./attributes_1.txt")
-	data_dict=getDataDict(attr_types,"./dataset_1.txt")
+	attr_types=getAttrTypes("./attributes.txt")
+	data_dict=getDataDict(attr_types,"./dataset_large.txt")
 	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	#getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
 	print("}", file=sys.stderr)
+
+	print(time.time()-start)
 
 
 
