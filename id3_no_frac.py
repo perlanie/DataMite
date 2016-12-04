@@ -4,6 +4,7 @@ import numpy as np
 import collections
 from collections import Counter, defaultdict
 import time
+import cProfile
 
 data_dict=[
 	{'A1':'A', 'A2':70, 'A3':True, 'Class':'Class1'},
@@ -47,7 +48,7 @@ given attribute
 -probabilities:  an array of the probabilities of the classifications
 ======================================================================
 """
-def calcGain(data_dict,attribute, attr_probabilities,probabilities):
+def calcGain(data_dict,attribute, attr_probabilities, probabilities):
 	H=calcH(probabilities)
 	print(H)
 	HAttribute=0.0
@@ -93,16 +94,22 @@ getClassProbabilities: calculates probabilities for H
 """
 def getClassProbabilities(data_dict,classification):
 	denominator=len(data_dict)
-	classifications=list(Counter(d[classification] for d in data_dict).items())
-	probabilities = [ j[1] / denominator for j in classifications ]
+	class_counts= Counter(d[classification] for d in data_dict)
+	probabilities = [ count / denominator for cls, count in class_counts.items() ]
 	return probabilities
 
+
 def partitionNumericalData(data_dict, attr, classification):
-	sort = sorted(data_dict, key=lambda d: -d[attr])
-	median = sort[len(data_dict) // 2][attr]
-	smaller = [ a for a in sort if a[attr] <= median ] # [d for d in data_dict if d[attr] <= median]
-	bigger = [ a for a in sort if a[attr] > median ] #sort[:len(data_dict) // 2] # [d for d in data_dict if d[attr] > median]
-	return smaller, bigger, median
+	avg = sum(d[attr] for d in data_dict) / len(data_dict)
+	smaller = []
+	bigger = []
+	for d in data_dict:
+		if d[attr] <= avg:
+			smaller.append(d)
+		else:
+			bigger.append(d)
+	return smaller, bigger, avg
+
 
 """
 ==============================================================
@@ -125,24 +132,15 @@ def getSplittingAttribute(data_dict,attr_types):
 	probabilities=getClassProbabilities(data_dict, classification)
 	for attr, attr_type in attr_types:
 		if attr_type == "categorical":
-			print("ATTRIBUTE: {0}".format(attr))
-			print("===========================")
 			attr_probabilities=getAttrProbabilities(data_dict, attr, classification)
 			attr_gains[attr]=calcGain(data_dict, attr, attr_probabilities, probabilities)
-			print("\n")
 		elif attr_type == "numerical":
-			print("ATTRIBUTE: {0}".format(attr))
-			print ("===========================")
 			smaller, bigger, median = partitionNumericalData(data_dict, attr, classification)
-
 			H_smaller = calcH(getClassProbabilities(smaller, classification))
 			H_bigger = calcH(getClassProbabilities(bigger, classification))
 			HTAttribute = (len(smaller) / len(data_dict))*H_smaller + (len(bigger) / len(data_dict))*H_bigger
 			H = calcH(probabilities)
-			print("HAttribute: {0}".format(HTAttribute))
 			attr_gains[attr] = H - HTAttribute
-			print("gain: {0}".format(attr_gains[attr]))
-			print ("\n")
 		else:
 			print("{} ATTRIBUTE: {}".format(attr_type, attr))
 
@@ -154,6 +152,7 @@ def getSplittingAttribute(data_dict,attr_types):
 
 	print("Splitting Attribute = {0}".format(split_attr))
 	return split_attr, split_attr_type
+
 
 """
 ==============================================================
@@ -171,6 +170,7 @@ def getAttrTypes(filePath):
 			attr=line.split(":")
 			attr_types.append([a.strip() for a in attr])
 	return attr_types
+
 
 """
 ==============================================================
@@ -272,9 +272,9 @@ def main():
 	#getClassProbabilities(data_dict,"Class")
 	# attr_types=getAttrTypes("./mnist.attr")
 	# data_dict=getDataDict(attr_types,"./mnist.data")
-	# attr_types=getAttrTypes("./large_atters.txt")
-	# data_dict=getDataDict(attr_types,"./large_dataset.txt")
-	attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
+	attr_types=getAttrTypes("./large_atters.txt")
+	data_dict=getDataDict(attr_types,"./large_dataset.txt")
+	# attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	# getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
@@ -285,4 +285,4 @@ def main():
 
 
 if __name__ == '__main__':
-	main()
+	cProfile.run('main()')
