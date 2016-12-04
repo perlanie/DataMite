@@ -3,25 +3,7 @@ import sys
 import numpy as np
 import collections
 from collections import Counter, defaultdict
-import time
-import cProfile
-import statistics
-# data_dict=[
-# 	{'A1':'A', 'A2':70, 'A3':True, 'Class':'Class1'},
-# 	{'A1':'A', 'A2':90, 'A3':True, 'Class':'Class2'},
-# 	{'A1':'A', 'A2':85, 'A3':False, 'Class':'Class2'},
-# 	{'A1':'A', 'A2':95, 'A3':False, 'Class':'Class2'},
-# 	{'A1':'A', 'A2':70, 'A3':False, 'Class':'Class1'},
-# 	{'A1':'B', 'A2':90, 'A3':True, 'Class':'Class1'},
-# 	{'A1':'B', 'A2':78, 'A3':False, 'Class':'Class1'},
-# 	{'A1':'B', 'A2':65, 'A3':True, 'Class':'Class1'},
-# 	{'A1':'B', 'A2':75, 'A3':False, 'Class':'Class1'},
-# 	{'A1':'C', 'A2':80, 'A3':True, 'Class':'Class2'},
-# 	{'A1':'C', 'A2':70, 'A3':True, 'Class':'Class2'},
-# 	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
-# 	{'A1':'C', 'A2':80, 'A3':False, 'Class':'Class1'},
-# 	{'A1':'C', 'A2':96, 'A3':False, 'Class':'Class1'}
-# ]
+import time 
 
 data_dict = [
 	['A', 70, True, 'Class1'],
@@ -40,7 +22,6 @@ data_dict = [
 	['C', 96, False, 'Class1']
 ]
 
-H=None
 
 """
 ========================================
@@ -58,8 +39,8 @@ def calcH(probabilities):
 =====================================================================
 calcGain: calculates gain of each attributes
 ---------------------------------------------------------------------
--data_dict: data set that you would like to analyze
--attribute: the attribute you would like to get probabilities for
+-data: data set that you would like to analyze
+-attr_idx: attribute index
 -attr_probabilities: the probabilities for the different values of
 given attribute
 -probabilities:  an array of the probabilities of the classifications
@@ -84,9 +65,9 @@ def calcGain(data, attr_idx, attr_probabilities, probabilities):
 ===================================================================
 getAttrProbabilities: gets the probabilities for a given attribute
 -------------------------------------------------------------------
--data_dict: data set that you would like to analyze
--attribute: the attribute you would like to get probabilities for
--classification: the class that you are using to get resulting tree
+-data: data set that you would like to analyze
+-attr_idx: the attribute index you would like to get probabilities for
+-class_idx: the class index that you are using to get resulting tree
 ===================================================================
 """
 def getAttrProbabilities(data, attr_idx, class_idx):
@@ -104,8 +85,8 @@ def getAttrProbabilities(data, attr_idx, class_idx):
 ==============================================================
 getClassProbabilities: calculates probabilities for H
 --------------------------------------------------------------
--data_dict: data dictionary to look at
--classification: attribute that is used for the classification
+-data: data dictionary to look at
+-class_idx: the class index that you are using to get resulting tree
 ===============================================================
 """
 def getClassProbabilities(data, class_idx):
@@ -114,7 +95,15 @@ def getClassProbabilities(data, class_idx):
 	probabilities = [ count / denominator for cls, count in class_counts.items() ]
 	return probabilities
 
-
+"""
+==============================================================
+partitionNumericalData: partitions numerical data
+--------------------------------------------------------------
+-data: data dictionary to look at
+-attr_idx: attribute index
+-class_idx: class index
+===============================================================
+"""
 def partitionNumericalData(data, attr_idx, class_idx):
 	avg = sum(d[attr_idx] for d in data) / len(data)
 	smaller = []
@@ -132,7 +121,7 @@ def partitionNumericalData(data, attr_idx, class_idx):
 getSplittingAttribute: gets the splitting attribute of the
 given data set
 --------------------------------------------------------------
--data_dict: data dictionary to look at
+-data: data dictionary to look at
 -attr_types: data dictionary that has the type of each attribute
 in the given data set
 ===============================================================
@@ -217,6 +206,19 @@ def getDataDict(attr_types, filePath):
 			data.append(data_row)
 	return data
 
+
+
+"""
+==============================================================
+createDecsionTree: reads in a data set and turns it into a data
+dictionary
+--------------------------------------------------------------
+-data: data dictionary to look at
+-attr_types: the attributes along with what types they are
+-parent_name: name of the parent node
+-branch_name: name of the branch the parent expands on
+===============================================================
+"""
 node_count = 0
 def createDecsionTree(data, attr_types, parent_name, branch_name):
 	global node_count
@@ -240,10 +242,6 @@ def createDecsionTree(data, attr_types, parent_name, branch_name):
 			print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
 
 			split_attr_nodes = Counter(d[split_attr_idx] for d in data).keys()
-			print("split_attr_nodes:",split_attr_nodes)
-			# new_dicts = { node: [d for d in data if d[split_attr_idx] == node]
-			# 			    for node in split_attr_nodes }
-
 
 			new_dicts={}
 			for node in split_attr_nodes:
@@ -254,15 +252,11 @@ def createDecsionTree(data, attr_types, parent_name, branch_name):
 				del d[split_attr_idx]
 				new_dicts[attr].append(d)
 
-			# for node in new_dicts:
-			# 	attr_data = new_dicts[node]
-			# 	for d in attr_data:
-			# 		del d[split_attr_idx]
 
 			attr_types = [a for i, a in enumerate(attr_types) if i != split_attr_idx]
 			assert len(data[0]) == len(attr_types)
-			print(data[0])
-			print([t[1] for t in attr_types])
+			#print(data[0])
+			#print([t[1] for t in attr_types])
 			for node in new_dicts:
 				attr_data = new_dicts[node]
 				createDecsionTree(attr_data, attr_types, node_name, node)
@@ -291,16 +285,10 @@ def createDecsionTree(data, attr_types, parent_name, branch_name):
 """
 def main():
 	start=time.time()
-	#getClassProbabilities(data_dict,"Class")
-	#attr_types=getAttrTypes("./attributes_census.txt")
-	#data_dict=getDataDict(attr_types,"./dataset_census.txt")
-	attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
-	# attr_types=getAttrTypes("./large_atters.txt")
-	#print(attr_types)
-	# data_dict=getDataDict(attr_types,"./large_dataset.txt")
-	# print(data_dict[0], attr_types)
-
-	# getSplittingAttribute(data_dict,attr_types)
+	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
+	attr_types=getAttrTypes("./large_atters.txt")
+	data_dict=getDataDict(attr_types,"./large_dataset.txt")
+	
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
 	print("}", file=sys.stderr)
@@ -310,5 +298,4 @@ def main():
 
 
 if __name__ == '__main__':
-	# cProfile.run('main()')
 	main()
