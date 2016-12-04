@@ -100,8 +100,8 @@ def getClassProbabilities(data_dict,classification):
 def partitionNumericalData(data_dict, attr, classification):
 	sort = sorted(data_dict, key=lambda d: -d[attr])
 	median = sort[len(data_dict) // 2][attr]
-	smaller = sort[len(data_dict) // 2:] # [d for d in data_dict if d[attr] <= median]
-	bigger = sort[:len(data_dict) // 2] # [d for d in data_dict if d[attr] > median]
+	smaller = [ a for a in sort if a[attr] <= median ] # [d for d in data_dict if d[attr] <= median]
+	bigger = [ a for a in sort if a[attr] > median ] #sort[:len(data_dict) // 2] # [d for d in data_dict if d[attr] > median]
 	return smaller, bigger, median
 
 """
@@ -121,7 +121,6 @@ def getSplittingAttribute(data_dict,attr_types):
 	for attr_class in attr_types:
 		if(attr_class[1]=="class"):
 			classification=attr_class[0]
-
 
 	probabilities=getClassProbabilities(data_dict, classification)
 	for attr, attr_type in attr_types:
@@ -217,19 +216,19 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 
 	active_classes = { datum[classification] for datum in data_dict }
 	#print("active classes", active_classes)
-	if len(active_classes) > 1:
+	if len(active_classes) > 1 and len(attr_types) > 1:
 		split_attr, split_attr_type = getSplittingAttribute(data_dict, attr_types)
 
 		node_name = split_attr + '_' + str(node_count)
-		print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
 
-		if parent_name is not None:
-			print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name, branch_name), file=sys.stderr)
 
 		if split_attr_type == 'categorical':
-			sorted_dict=sorted(data_dict, key=lambda a: (a[split_attr], a[classification]))
+			if parent_name is not None:
+				print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name, branch_name), file=sys.stderr)
+				print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
+			# sorted_dict=sorted(data_dict, key=lambda a: (a[split_attr], a[classification]))
 			split_attr_nodes=list(Counter(data[split_attr] for data in data_dict).keys())
-			new_dicts={ node: [a for a in sorted_dict if a[split_attr] == node]
+			new_dicts={ node: [a for a in data_dict if a[split_attr] == node]
 						for node in split_attr_nodes }
 
 			for node in new_dicts:
@@ -244,9 +243,17 @@ def createDecsionTree(data_dict, attr_types, parent_name, branch_name):
 				createDecsionTree(attr_dict,attr_types, node_name,node)
 		else:
 			assert split_attr_type == 'numerical', split_attr_type
-			smaller, bigger, median = partitionNumericalData(data_dict, split_attr, classification)
-			createDecsionTree(smaller, attr_types, node_name, "<= " + str(median))
-			createDecsionTree(bigger, attr_types, node_name, "> " + str(median))
+			smaller, bigger, branching_num = partitionNumericalData(data_dict, split_attr, classification)
+			if smaller == [] or bigger == []:
+				print('We have competing evidence here')
+				#attr_types = [a for a in attr_types if a[0] != split_attr]
+				#createDecsionTree(data_dict, attr_types, parent_name, branch_name)
+			else:
+				if parent_name is not None:
+					print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name, branch_name), file=sys.stderr)
+					print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
+				createDecsionTree(smaller, attr_types, node_name, "<= " + str(branching_num))
+				createDecsionTree(bigger, attr_types, node_name, "> " + str(branching_num))
 
 	else:
 		class_name = data_dict[0][classification]
@@ -265,9 +272,9 @@ def main():
 	#getClassProbabilities(data_dict,"Class")
 	# attr_types=getAttrTypes("./mnist.attr")
 	# data_dict=getDataDict(attr_types,"./mnist.data")
-	attr_types=getAttrTypes("./attributes.txt")
-	data_dict=getDataDict(attr_types,"./dataset_large.txt")
-	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
+	# attr_types=getAttrTypes("./large_atters.txt")
+	# data_dict=getDataDict(attr_types,"./large_dataset.txt")
+	attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	# getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)

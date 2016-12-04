@@ -284,8 +284,8 @@ def main():
 	start=time.time()
 	# attr_types=getAttrTypes("./mnist.attr")
 	# data_dict=getDataDict(attr_types,"./mnist.data")
-	attr_types=getAttrTypes("./attributes.txt")
-	data_dict=getDataDict(attr_types,"./dataset_large.txt")
+	attr_types=getAttrTypes("./large_atters.txt")
+	data_dict=getDataDict(attr_types,"./large_dataset.txt")
 	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
 	#getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
