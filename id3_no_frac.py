@@ -237,14 +237,14 @@ def createDecsionTree(data, attr_types, parent_name, branch_name):
 		if split_attr_type == 'categorical':
 			if parent_name is not None:
 				print('"{}" -> "{}" [label="{}"];'.format(parent_name, node_name, branch_name), file=sys.stderr)
-				print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
+			print('"{}" [label="{}"];'.format(node_name, split_attr), file=sys.stderr)
 
 			split_attr_nodes = Counter(d[split_attr_idx] for d in data).keys()
 			print("split_attr_nodes:",split_attr_nodes)
 			# new_dicts = { node: [d for d in data if d[split_attr_idx] == node]
 			# 			    for node in split_attr_nodes }
 
-			
+
 			new_dicts={}
 			for node in split_attr_nodes:
 				new_dicts[node]=[]
@@ -294,12 +294,12 @@ def main():
 	#getClassProbabilities(data_dict,"Class")
 	#attr_types=getAttrTypes("./attributes_census.txt")
 	#data_dict=getDataDict(attr_types,"./dataset_census.txt")
-	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
-	attr_types=getAttrTypes("./large_atters.txt")
+	attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
+	# attr_types=getAttrTypes("./large_atters.txt")
 	#print(attr_types)
-	data_dict=getDataDict(attr_types,"./large_dataset.txt")
-	print(data_dict[0], attr_types)
-	
+	# data_dict=getDataDict(attr_types,"./large_dataset.txt")
+	# print(data_dict[0], attr_types)
+
 	# getSplittingAttribute(data_dict,attr_types)
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
