@@ -190,6 +190,7 @@ dictionary
 """
 def getDataDict(attr_types, filePath):
 	data=[]
+	attr_count=len(attr_types)
 	with open(filePath, 'r') as f:
 		for line in f:
 			line = line.strip()
@@ -203,7 +204,9 @@ def getDataDict(attr_types, filePath):
 					data_row.append(float(elem.strip()))
 				else:
 					data_row.append(elem.strip())
-			data.append(data_row)
+			
+			if attr_count==len(data_row):
+				data.append(data_row)
 	return data
 
 

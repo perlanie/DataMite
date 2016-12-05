@@ -205,6 +205,8 @@ dictionary
 """
 def getDataDict(attr_types,filePath):
 	data_dict=[]
+	attr_count=len(attr_types)
+
 	with open(filePath, 'r') as f:
 		for line in f:
 			line = line.strip()
@@ -212,15 +214,19 @@ def getDataDict(attr_types,filePath):
 				continue
 
 			data_set_row=line.split(",")
-			data_dict_row={}
-			index=0
-			for attr, attr_type in attr_types:
-				if attr_type == 'numerical':
-					data_dict_row[attr] = float(data_set_row[index].strip())
-				else:
-					data_dict_row[attr] = data_set_row[index].strip()
-				index+=1
-			data_dict.append(data_dict_row)
+
+			if len(data_set_row)==attr_count:
+				data_dict_row={}
+				index=0
+				for attr, attr_type in attr_types:
+					if attr_type == 'numerical':
+						data_dict_row[attr] = float(data_set_row[index].strip())
+					else:
+						data_dict_row[attr] = data_set_row[index].strip()
+					index+=1
+				data_dict.append(data_dict_row)
+			else:
+				sys.exit("Invalid Dataset: all rows in the dataset must be the same length.")
 	return data_dict
 
 node_count = 0
