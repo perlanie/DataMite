@@ -289,8 +289,8 @@ def createDecsionTree(data, attr_types, parent_name, branch_name):
 def main():
 	start=time.time()
 	#attr_types=[["A1","categorical"],["A2","numerical"],["A3","categorical"],["Class","class"]]
-	attr_types=getAttrTypes("./large_atters.txt")
-	data_dict=getDataDict(attr_types,"./large_dataset.txt")
+	attr_types=getAttrTypes("./tic-tac-toe_attrs.txt")
+	data_dict=getDataDict(attr_types,"./tic-tac-toe.txt")
 	
 	print("digraph g{", file=sys.stderr)
 	createDecsionTree(data_dict,attr_types,None,None)
